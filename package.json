@@ -1,0 +1,24 @@
+{
+  "name": "livetimer",
+  "version": "1.0.0",
+  "description": "LiveTimer for livestreaming",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gary50613/LiveTimer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Gary50613/LiveTimer/issues"
+  },
+  "homepage": "https://github.com/Gary50613/LiveTimer#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^4.4.0"
+  }
+}

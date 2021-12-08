@@ -1,0 +1,67 @@
+.container--v {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    grid-template-rows: 1fr 1fr;
+}
+
+.container--h {
+    flex-grow: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    height: 100%;
+}
+
+.timer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.timer.a {
+    border-right: 1px dashed white;
+    border-bottom: 1px dashed white;
+}
+
+.timer.b {
+    border-bottom: 1px dashed white;
+}
+
+.timer.c {
+    border-right: 1px dashed white;
+}
+
+.timer .plus {
+    color: white;
+    font-size: 8rem;
+}
+
+.timer .time {
+    color: white;
+    font-size: 6rem;
+}
+
+.timer .title {
+    color: white;
+    font-size: 2rem;
+    font-weight: bolder;
+}
+
+.timer .yellow {
+    color: orange;
+}
+
+.timer .red {
+    color: red;
+}
+
+html, body {
+    font-family: "Noto Sans TC", sans-serif;
+    background: black;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}

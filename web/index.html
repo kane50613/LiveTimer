@@ -1,0 +1,73 @@
+<html lang="zh-Hant-Tw">
+<head>
+    <title>LiveTimer</title>
+    <link rel="stylesheet" href="./style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC&display=swap" rel="stylesheet"/>
+</head>
+<body>
+<section class="container--v">
+    <div class="container--h">
+        <div class="timer a"></div>
+        <div class="timer b"></div>
+    </div>
+    <div class="container--h">
+        <div class="timer c"></div>
+        <div class="timer d"></div>
+    </div>
+</section>
+
+<script src="./socket.io.min.js"></script>
+<script>
+	let timers = new Array(4)
+	const socket = io.connect()
+	const timersContainer = document.querySelectorAll(".timer")
+	socket.on("init", (_timers) => {
+		timers = _timers
+		for (let i = 0; i < timers.length; i++) {
+			const timer = timers[i]
+			if (!timer)
+				continue
+			timersContainer[i].innerHTML = buildTimer(timer)
+		}
+	})
+
+	socket.on("timer", (timer) => {
+		timersContainer[timer.position].innerHTML = buildTimer(timer)
+	})
+
+	for (const timer of timersContainer) {
+		timer.addEventListener("click", () => {
+			const index = [...timersContainer].indexOf(timer)
+			const title = prompt("請輸入標題")
+			if (!title || title.length === 0)
+				return
+            const down = parseInt(prompt("倒數秒數"))
+            if(!down || isNaN(down) || down < 0)
+                return
+			socket.emit("set", {index, title, down})
+		})
+	}
+
+	function buildTimer(timer) {
+		let color = 'white'
+        if(timer.counted <= 30)
+            color = 'yellow'
+        if(timer.counted <= 10)
+			color = "red"
+
+        return `<span class="time ${color}">${parseTime(timer.counted)}</span><span class="title ${color}">${timer.title}</span>`
+    }
+
+	function parseTime(time) {
+		const hr = Math.floor(time / 3600) || 0
+		const min = Math.floor((time % 3600) / 60) || 0
+		const sec = time % 60 || 0
+
+		return `${hr < 10 ? '0' + hr : hr}:${min < 10 ? '0' + min : min}:${sec < 10 ? '0' + sec : sec}`
+	}
+</script>
+</body>
+</html>
