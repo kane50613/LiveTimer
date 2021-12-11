@@ -22,15 +22,15 @@
 <script src="./socket.io.min.js"></script>
 <script>
 	let timers = new Array(4)
-    const password = prompt("請輸入密碼")
-	const socket = io({
-        auth: password
-    })
+	const socket = io()
 
-    socket.on('disconnect', () => {
-        alert("連線已中斷")
-        window.location.href = "/"
-    })
+	socket.on('disconnect', () => {
+		alert("連線已中斷")
+		window.location.href = "/"
+	})
+
+	const password = prompt("請輸入密碼")
+    socket.emit('admin', password)
 
 	const timersContainer = document.querySelectorAll(".timer")
 	socket.on("init", (_timers) => {
@@ -40,12 +40,13 @@
 			if (!timer) {
 				timersContainer[i].innerHTML = `
                     <div class="btn--container">
-                        <button class="green" onclick="setTimer(${i})">設置計時</button>
+                        <button class="green" onclick="setTimer(${i}, 0)">設置計時</button>
+                        <button class="green" onclick="setTimer(${i}, 3)">現在時間</button>
                         <button class="btn btn--reset">重置</button>
                     </div>
                 `
 				continue
-            }
+			}
 			timersContainer[i].innerHTML = buildTimer(timer)
 		}
 	})
@@ -54,25 +55,27 @@
 		timersContainer[timer.position].innerHTML = buildTimer(timer)
 	})
 
-    function setTimer(index) {
+	function setTimer(index, type) {
+		if(type === 3)
+			return socket.emit("set", {index, title: "現在時間", down: 0, type})
 		const title = prompt("請輸入標題")
 		if (!title || title.length === 0)
 			return
-		const down = parseInt(prompt("倒數秒數"))
-		if(!down || isNaN(down) || down < 0)
-			return alert("秒數不是數字或是是負數")
-		socket.emit("set", {index, title, down})
+        const down = parseInt(prompt("倒數秒數"))
+        if (!down || isNaN(down) || down < 0)
+            return alert("秒數不是數字或是是負數")
+        socket.emit("set", {index, title, down, type})
 	}
 
 	function action(type, position) {
 		socket.emit(type, position)
-    }
+	}
 
 	function buildTimer(timer) {
 		let color = 'white'
-		if(timer.counted <= 30)
+		if (timer.counted <= 30)
 			color = 'yellow'
-		if(timer.counted <= 10)
+		if (timer.counted <= 10)
 			color = "red"
 
 		return `
