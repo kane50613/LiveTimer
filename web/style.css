@@ -57,6 +57,22 @@
     color: red;
 }
 
+.btn--container {
+    margin: 1rem 0;
+    display: flex;
+}
+
+.btn--container > button {
+    font-weight: 700;
+    font-size: larger;
+    outline: none;
+    border: none;
+    border-radius: 5px;
+    padding: .25rem .75rem;
+    margin: 0 .5rem;
+    cursor: pointer;
+}
+
 html, body {
     font-family: "Noto Sans TC", sans-serif;
     background: black;

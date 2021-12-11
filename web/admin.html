@@ -1,0 +1,111 @@
+<html lang="zh-Hant-Tw">
+<head>
+    <title>管理員 | LiveTimer</title>
+    <link rel="stylesheet" href="./style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC&display=swap" rel="stylesheet"/>
+</head>
+<body>
+<section class="container--v">
+    <div class="container--h">
+        <div class="timer a"></div>
+        <div class="timer b"></div>
+    </div>
+    <div class="container--h">
+        <div class="timer c"></div>
+        <div class="timer d"></div>
+    </div>
+</section>
+
+<script src="./socket.io.min.js"></script>
+<script>
+	let timers = new Array(4)
+    const password = prompt("請輸入密碼")
+	const socket = io({
+        auth: password
+    })
+
+    socket.on('disconnect', () => {
+        alert("連線已中斷")
+        window.location.href = "/"
+    })
+
+	const timersContainer = document.querySelectorAll(".timer")
+	socket.on("init", (_timers) => {
+		timers = _timers
+		for (let i = 0; i < timers.length; i++) {
+			const timer = timers[i]
+			if (!timer) {
+				timersContainer[i].innerHTML = `
+                    <div class="btn--container">
+                        <button class="green" onclick="setTimer(${i})">設置計時</button>
+                        <button class="btn btn--reset">重置</button>
+                    </div>
+                `
+				continue
+            }
+			timersContainer[i].innerHTML = buildTimer(timer)
+		}
+	})
+
+	socket.on("timer", (timer) => {
+		timersContainer[timer.position].innerHTML = buildTimer(timer)
+	})
+
+    function setTimer(index) {
+		const title = prompt("請輸入標題")
+		if (!title || title.length === 0)
+			return
+		const down = parseInt(prompt("倒數秒數"))
+		if(!down || isNaN(down) || down < 0)
+			return alert("秒數不是數字或是是負數")
+		socket.emit("set", {index, title, down})
+	}
+
+	function action(type, position) {
+		socket.emit(type, position)
+    }
+
+	function buildTimer(timer) {
+		let color = 'white'
+		if(timer.counted <= 30)
+			color = 'yellow'
+		if(timer.counted <= 10)
+			color = "red"
+
+		return `
+            <span class="time ${color}">
+                ${parseTime(timer.counted)}
+            </span>
+            <span class="title ${color}">
+                ${timer.title} ${timer.paused ? "(已暫停)" : ""}
+            </span>
+            <div class="btn--container">
+                <button onclick="action('stop', ${timer.position})">
+                    暫停
+                </button>
+                <button onclick="action('start', ${timer.position})">
+                    繼續
+                </button>
+                <button onclick="action('reset', ${timer.position})">
+                    重設計時器
+                </button>
+                <button onclick="action('clear', ${timer.position})">
+                    移除
+                </button>
+            </div>
+        `
+	}
+
+	function parseTime(time) {
+		const hr = Math.floor(time / 3600) || 0
+		const min = Math.floor((time % 3600) / 60) || 0
+		const sec = time % 60 || 0
+
+		return `${hr < 10 ? '0' + hr : hr}:${min < 10 ? '0' + min : min}:${sec < 10 ? '0' + sec : sec}`
+	}
+</script>
+</body>
+</html>

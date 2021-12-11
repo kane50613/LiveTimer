@@ -28,8 +28,10 @@
 		timers = _timers
 		for (let i = 0; i < timers.length; i++) {
 			const timer = timers[i]
-			if (!timer)
+			if (!timer) {
+				timersContainer[i].innerHTML = ""
 				continue
+            }
 			timersContainer[i].innerHTML = buildTimer(timer)
 		}
 	})
@@ -37,19 +39,6 @@
 	socket.on("timer", (timer) => {
 		timersContainer[timer.position].innerHTML = buildTimer(timer)
 	})
-
-	for (const timer of timersContainer) {
-		timer.addEventListener("click", () => {
-			const index = [...timersContainer].indexOf(timer)
-			const title = prompt("請輸入標題")
-			if (!title || title.length === 0)
-				return
-            const down = parseInt(prompt("倒數秒數"))
-            if(!down || isNaN(down) || down < 0)
-                return
-			socket.emit("set", {index, title, down})
-		})
-	}
 
 	function buildTimer(timer) {
 		let color = 'white'
