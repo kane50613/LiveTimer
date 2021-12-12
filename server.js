@@ -105,7 +105,7 @@ async function getVideos() {
 	if (!fs.existsSync("web/videos"))
 		fs.mkdirSync("web/videos")
 	
-	const videos = fs.readdirSync("web/videos").map(x => ({
+	const videos = fs.readdirSync("web/videos").filter(x => /\.(mp4)$/.test(x)).map(x => ({
 		link: x,
 	}))
 	
