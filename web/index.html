@@ -57,12 +57,14 @@
         `
     }
 
-	function parseTime(time) {
+	function parseTime(time, nullable = false) {
+        const isNegative = time < 0
+		time = Math.floor(Math.abs(time))
 		const hr = Math.floor(time / 3600) || 0
 		const min = Math.floor((time % 3600) / 60) || 0
 		const sec = time % 60 || 0
 
-		return `${hr < 10 ? '0' + hr : hr}:${min < 10 ? '0' + min : min}:${sec < 10 ? '0' + sec : sec}`
+		return `${isNegative ? "-" : ""}${hr === 0 && nullable ? "" : ((hr < 10 ? '0' + hr : hr) + ":")}${min < 10 ? '0' + min : min}:${sec < 10 ? '0' + sec : sec}`
 	}
 </script>
 </body>
