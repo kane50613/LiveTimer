@@ -94,10 +94,10 @@ class Timer {
 const config = require('./config')
 
 const timers = [
-	new Timer(0, "現在時間", 0, 3),
-	new Timer(1, "影片倒數", 0, 0),
-	new Timer(2, "距離直播開始", parseTimeString(config.default.beginTime), 2),
-	new Timer(3, "距離直播結束", parseTimeString(config.default.endTime), 2),
+	new Timer(0, "現在時間 (Now Time)", 0, 3),
+	new Timer(1, "影片倒數 (Video Countdown)", 0, 0),
+	new Timer(2, "距離直播開始 (Live Time)", parseTimeString(config.default.beginTime), 2),
+	new Timer(3, "距離直播結束 (End Time)", parseTimeString(config.default.endTime), 2),
 ]
 const password = process.env.PASSWORD || config.password ||
 	new Array(5).fill(0).map(() => Math.floor(Math.random() * 10)).join('')

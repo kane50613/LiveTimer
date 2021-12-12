@@ -73,12 +73,13 @@
 }
 
 .timer .title {
+    font-family: "JetBrains Mono", "Noto Sans TC", sans-serif;
     font-size: 2rem;
     font-weight: 900;
 }
 
 .large .timer .title {
-    font-size: 3rem;
+    font-size: 2.75rem;
     margin-bottom: 3rem;
 }
 
