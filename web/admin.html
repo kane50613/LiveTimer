@@ -8,46 +8,77 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC&display=swap" rel="stylesheet"/>
 </head>
 <body>
-<section class="container--v">
-    <div class="container--h">
-        <div class="timer a"></div>
-        <div class="timer b"></div>
+<section class="container">
+    <div class="container--v">
+        <div class="container--h">
+            <div class="timer a"></div>
+            <div class="timer b"></div>
+        </div>
+        <div class="container--h">
+            <div class="timer c"></div>
+            <div class="timer d"></div>
+        </div>
     </div>
-    <div class="container--h">
-        <div class="timer c"></div>
-        <div class="timer d"></div>
+    <div class="container--video">
+        <h1>播放清單</h1>
+        <div class="playlist"></div>
     </div>
 </section>
 
 <script src="./socket.io.min.js"></script>
 <script>
-	let timers = new Array(4)
-	const socket = io()
+	let timers = new Array(4), videos = []
+
+	const password = localStorage.getItem("password") || prompt("請輸入密碼")
+	localStorage.setItem("password", password)
+
+	const socket = io({
+		auth: {password},
+		reconnection: false,
+	})
 
 	socket.on('disconnect', () => {
 		alert("連線已中斷")
-		window.location.href = "/"
+		const clearPassword = confirm("要不要清除密碼?")
+		if (clearPassword)
+			localStorage.removeItem("password")
+		// window.location.href = "/"
 	})
 
-	const password = prompt("請輸入密碼")
-    socket.emit('admin', password)
-
 	const timersContainer = document.querySelectorAll(".timer")
+	const playlistContainer = document.querySelector("div.playlist")
+
 	socket.on("init", (_timers) => {
 		timers = _timers
 		for (let i = 0; i < timers.length; i++) {
 			const timer = timers[i]
 			if (!timer) {
-				timersContainer[i].innerHTML = `
-                    <div class="btn--container">
-                        <button class="green" onclick="setTimer(${i}, 0)">設置計時</button>
-                        <button class="green" onclick="setTimer(${i}, 3)">現在時間</button>
-                        <button class="btn btn--reset">重置</button>
-                    </div>
-                `
+				timersContainer[i].innerHTML = ''
+				// timersContainer[i].innerHTML = `
+				//     <div class="btn--container">
+				//         <button class="green" onclick="setTimer(${i}, 0)">計時器</button>
+				//         <button class="green" onclick="setTimer(${i}, 0)">碼表</button>
+				//         <button class="green" onclick="setTimer(${i}, 0)">目標時間</button>
+				//         <button class="green" onclick="setTimer(${i}, 3)">現在時間</button>
+				//         <button class="red">重置</button>
+				//     </div>
+				// `
 				continue
 			}
 			timersContainer[i].innerHTML = buildTimer(timer)
+		}
+	})
+
+	socket.on("init_videos", (_videos) => {
+		videos = _videos
+		playlistContainer.innerHTML = ""
+
+		for (const vid of videos) {
+			playlistContainer.innerHTML +=
+				`<div class="item--container" onclick="action('set_video', '${vid?.link}')">
+                    <span class="link">${vid?.link}</span>
+                    <span class="duration">${parseTime(vid?.duration, true)}</span>
+                </div>`
 		}
 	})
 
@@ -56,15 +87,15 @@
 	})
 
 	function setTimer(index, type) {
-		if(type === 3)
+		if (type === 3)
 			return socket.emit("set", {index, title: "現在時間", down: 0, type})
 		const title = prompt("請輸入標題")
 		if (!title || title.length === 0)
 			return
-        const down = parseInt(prompt("倒數秒數"))
-        if (!down || isNaN(down) || down < 0)
-            return alert("秒數不是數字或是是負數")
-        socket.emit("set", {index, title, down, type})
+		const down = parseInt(prompt("倒數秒數"))
+		if (!down || isNaN(down) || down < 0)
+			return alert("秒數不是數字或是是負數")
+		socket.emit("set", {index, title, down, type})
 	}
 
 	function action(type, position) {
@@ -85,29 +116,31 @@
             <span class="title ${color}">
                 ${timer.title} ${timer.paused ? "(已暫停)" : ""}
             </span>
-            <div class="btn--container">
-                <button onclick="action('stop', ${timer.position})">
-                    暫停
-                </button>
-                <button onclick="action('start', ${timer.position})">
-                    繼續
-                </button>
-                <button onclick="action('reset', ${timer.position})">
-                    重設計時器
-                </button>
-                <button onclick="action('clear', ${timer.position})">
-                    移除
-                </button>
-            </div>
         `
+		//  <div class="btn--container">
+		// 		<button onclick="action('stop', ${timer.position})">
+		// 		暫停
+		// 		</button>
+		// 	<button onclick="action('start', ${timer.position})">
+		// 		繼續
+		// 	</button>
+		// 	<button onclick="action('reset', ${timer.position})">
+		// 		重設計時器
+		// 	</button>
+		// 	<button onclick="action('clear', ${timer.position})">
+		// 		移除
+		// 	</button>
+		// </div>
+
 	}
 
-	function parseTime(time) {
+	function parseTime(time, nullable = false) {
+		time = Math.floor(time)
 		const hr = Math.floor(time / 3600) || 0
 		const min = Math.floor((time % 3600) / 60) || 0
 		const sec = time % 60 || 0
 
-		return `${hr < 10 ? '0' + hr : hr}:${min < 10 ? '0' + min : min}:${sec < 10 ? '0' + sec : sec}`
+		return `${hr === 0 && nullable ? "" : ((hr < 10 ? '0' + hr : hr) + ":")}${min < 10 ? '0' + min : min}:${sec < 10 ? '0' + sec : sec}`
 	}
 </script>
 </body>

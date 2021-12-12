@@ -33,14 +33,31 @@
     border-right: 1px dashed white;
 }
 
-.timer .plus {
-    color: white;
-    font-size: 8rem;
-}
-
 .timer .time {
     color: white;
     font-size: 6rem;
+}
+
+.large > .timer .time {
+    font-size: 12rem;
+}
+
+@media (max-width: 1536px) {
+    .large > .timer .time {
+        font-size: 10rem;
+    }
+}
+
+@media (max-width: 1280px) {
+    .large > .timer .time {
+        font-size: 8rem;
+    }
+}
+
+@media (max-width: 1000px) {
+    .large > .timer .time {
+        font-size: 6rem;
+    }
 }
 
 .timer .title {
@@ -55,6 +72,53 @@
 
 .timer .red {
     color: red;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 8fr 2fr;
+    height: 100%;
+}
+
+.container--video {
+    border-left: 1px dashed white;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    background: #101010;
+}
+
+.container--video > .playlist > .item--container {
+    transition: .3s;
+    padding: .5rem .75rem;
+    color: white;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    margin: .5rem 0;
+    background: #151515;
+}
+
+.container--video > .playlist > .item--container > .link {
+    flex-grow: 1;
+}
+
+.container--video > .playlist > .item--container > .duration {
+    color: white;
+    margin-left: 2rem;
+}
+
+.container--video > .playlist > .item--container:hover,
+.container--video > .playlist > .item--container:focus {
+    background: rgba(255, 255, 255, .25);
+}
+
+.container--video > h1 {
+    color: white;
 }
 
 .btn--container {
@@ -78,6 +142,11 @@ html, body {
     background: black;
     margin: 0;
     padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+video {
     width: 100%;
     height: 100%;
 }

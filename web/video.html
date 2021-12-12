@@ -6,8 +6,23 @@
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC&display=swap" rel="stylesheet"/>
+
+    <script src="./socket.io.min.js"></script>
 </head>
 <body>
+<video>
+    <source type="video/mp4">
+</video>
+<script>
+	const socket = io()
 
+    socket.on("video", (_video) => {
+		const video = document.querySelector("video")
+        const src = document.querySelector("source")
+
+        src.src = `/videos/${_video?.link}`
+        video.load()
+    })
+</script>
 </body>
 </html>

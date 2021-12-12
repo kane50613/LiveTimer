@@ -22,4 +22,5 @@
 
 ## ❤️ 貢獻
  - [學長](https://github.com/lifeng-87): 製作了原始專案
+ - [壓榨我的學長](https://github.com/lyuchan): 提出這個想法 + 壓榨我
  - [我](https://github.com/Gary50613): 這個專案

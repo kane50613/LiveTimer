@@ -1,13 +1,11 @@
 const express = require('express')
 const {Server} = require("socket.io")
+const {getVideoDurationInSeconds} = require("get-video-duration")
 const http = require('http')
+const fs = require('fs')
 const app = express()
 const server = http.createServer(app)
 const io = new Server(server)
-
-const timers = new Array(4)
-const password = process.env.PASSWORD ||
-	new Array(5).fill(0).map(() => Math.floor(Math.random() * 10)).join('')
 
 // 0 = countdown
 // 1 = counter
@@ -28,31 +26,31 @@ class Timer {
 		this.title = title
 		this.type = type ?? 0
 		
-		if(this.type === 3) {
+		if (this.type === 3) {
 			this.counted = this.seconds
 			this.start()
 		}
 	}
 	
 	start() {
-		if(this.interval)
+		if (this.interval)
 			this.stop()
 		this.interval = setInterval(() => {
-			if(this.type === 0) {
-				if(this.counted <= 0)
+			if (this.type === 0) {
+				if (this.counted <= 0)
 					return this.stop()
 				this.counted--
 				io.emit('timer', this.toJSON())
 			}
-			if(this.type === 1) {
+			if (this.type === 1) {
 				this.counted++
 				io.emit('timer', this.toJSON())
 			}
-			if(this.type === 2) {
+			if (this.type === 2) {
 				this.counted = this._started - Date.now()
 				io.emit('timer', this.toJSON())
 			}
-			if(this.type === 3) {
+			if (this.type === 3) {
 				this.counted = this.seconds
 				io.emit('timer', this.toJSON())
 			}
@@ -60,7 +58,7 @@ class Timer {
 	}
 	
 	reset() {
-		if(this.type === 3)
+		if (this.type === 3)
 			return
 		clearInterval(this.interval)
 		this.interval = null
@@ -91,58 +89,99 @@ class Timer {
 	}
 }
 
+const timers = [
+	new Timer(0, "現在時間", 0, 3),
+	new Timer(1, "影片倒數", 0, 0),
+	null,
+	null
+]
+const config = require('./config')
+const password = process.env.PASSWORD || config.password ||
+	new Array(5).fill(0).map(() => Math.floor(Math.random() * 10)).join('')
+
+let video
+
+async function getVideos() {
+	if (!fs.existsSync("web/videos"))
+		fs.mkdirSync("web/videos")
+	
+	const videos = fs.readdirSync("web/videos").map(x => ({
+		link: x,
+	}))
+	
+	for (const vid of videos) {
+		vid.duration = Math.floor(await getVideoDurationInSeconds(`web/videos/${vid.link}`))
+	}
+	
+	return videos
+}
+
 app.use(express.static('web'))
 
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
 	socket.emit('init', timers)
+	socket.emit("init_videos", await getVideos())
+	if(video)
+		socket.emit("video", video)
 	
-	socket.on('admin', (pass) => {
-		if(pass !== password)
-			return socket.disconnect()
-		
-		socket._authed = true
-	})
+	function verify() {
+		return socket.handshake.auth.password === password
+	}
 	
 	socket.on("set", ({index, title, down, type}) => {
-		if(!socket._authed)
+		if(!verify())
 			return
-		if(timers[index])
+		if (timers[index])
 			timers[index].stop()
 		timers[index] = new Timer(index, title, down, type)
 		io.emit('init', timers.map(x => x?.toJSON()))
 	})
 	
 	socket.on("start", (position) => {
-		if(!socket._authed)
+		if(!verify())
 			return
-		if(!timers[position].paused)
+		if (!timers[position].paused)
 			return
 		timers[position].start()
 		socket.emit('init', timers.map(x => x?.toJSON()))
 	})
 	
 	socket.on("stop", (position) => {
-		if(!socket._authed)
+		if(!verify())
 			return
-		if(timers[position].paused)
+		if (timers[position].paused)
 			return
 		timers[position].stop()
 		io.emit('init', timers.map(x => x?.toJSON()))
 	})
 	
 	socket.on("reset", (position) => {
-		if(!socket._authed)
+		if(!verify())
 			return
 		timers[position].reset()
 		io.emit('init', timers.map(x => x?.toJSON()))
 	})
 	
 	socket.on("clear", (position) => {
-		if(!socket._authed)
+		if(!verify())
 			return
 		timers[position]?.stop()
 		delete timers[position]
 		io.emit('init', timers.map(x => x?.toJSON()))
+	})
+	
+	socket.on("set_video", async (link) => {
+		if(!verify())
+			return
+		const _video = (await getVideos()).find(x => x.link === link)
+		if(!_video)
+			return
+		video = _video
+		const timer = timers.find(x => x?.type === 0)
+		timer._started = _video.duration
+		timer.counted = timer._started
+		io.emit('init', timers.map(x => x?.toJSON()))
+		io.emit('video', video)
 	})
 })
 
