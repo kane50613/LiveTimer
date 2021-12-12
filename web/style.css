@@ -73,8 +73,12 @@
 }
 
 .timer .title {
-    font-size: 3rem;
+    font-size: 2rem;
     font-weight: 900;
+}
+
+.large .timer .title {
+    font-size: 3rem;
     margin-bottom: 3rem;
 }
 
