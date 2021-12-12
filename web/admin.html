@@ -18,19 +18,19 @@
     <div class="container--video">
         <h1>直播開始時間</h1>
         <label>
-            <input type="number" value="0" class="__input"/>
+            <input type="number" value="0" class="__input h" oninput="updateTimer(0)"/>
             <span>:</span>
-            <input type="number" value="0"/>
+            <input type="number" value="0" class="__input m" oninput="updateTimer(0)"/>
             <span>:</span>
-            <input type="number" value="0"/>
+            <input type="number" value="0" class="__input s" oninput="updateTimer(0)"/>
         </label>
         <h1>直播結束時間</h1>
         <label>
-            <input type="number" value="0"/>
+            <input type="number" value="0" class="__input h" oninput="updateTimer(1)"/>
             <span>:</span>
-            <input type="number" value="0"/>
+            <input type="number" value="0" class="__input m" oninput="updateTimer(1)"/>
             <span>:</span>
-            <input type="number" value="0"/>
+            <input type="number" value="0" class="__input s" oninput="updateTimer(1)"/>
         </label>
         <h1>影片控制</h1>
         <span id="videoText"></span>
@@ -74,19 +74,21 @@
 			const timer = timers[i]
 			if (!timer) {
 				timersContainer[i].innerHTML = ''
-				// timersContainer[i].innerHTML = `
-				//     <div class="btn--container">
-				//         <button class="green" onclick="setTimer(${i}, 0)">計時器</button>
-				//         <button class="green" onclick="setTimer(${i}, 0)">碼表</button>
-				//         <button class="green" onclick="setTimer(${i}, 0)">目標時間</button>
-				//         <button class="green" onclick="setTimer(${i}, 3)">現在時間</button>
-				//         <button class="red">重置</button>
-				//     </div>
-				// `
 				continue
 			}
 			timersContainer[i].innerHTML = buildTimer(timer)
 		}
+
+        for(let i = 0; i < 2; i++) {
+			let _t = timers[i + 2]._started
+            const h = Math.floor(_t / 3600)
+            _t -= h * 3600
+			const m = Math.floor(_t / 60)
+            _t -= m * 60
+            document.querySelectorAll(`.__input.h`)[i].value = h
+			document.querySelectorAll(`.__input.m`)[i].value = m
+			document.querySelectorAll(`.__input.s`)[i].value = _t
+        }
 	})
 
 	socket.on("init_videos", (_videos) => {
@@ -112,10 +114,12 @@
 		timersContainer[timer.position].innerHTML = buildTimer(timer)
 	})
 
-    function updateTimer(e) {
-        console.log(e)
-
-        return false
+    function updateTimer(index) {
+		socket.emit("set_timer", index + 2,
+            parseInt(document.querySelectorAll(`.__input.h`)[index].value) * 3600 +
+            parseInt(document.querySelectorAll(`.__input.m`)[index].value) * 60 +
+            parseInt(document.querySelectorAll(`.__input.s`)[index].value)
+        )
     }
 
 	function action(type, position) {
@@ -156,6 +160,8 @@
 
 	function parseTime(time, nullable = false) {
 		time = Math.floor(time)
+		if(time < 0)
+			return time.toString()
 		const hr = Math.floor(time / 3600) || 0
 		const min = Math.floor((time % 3600) / 60) || 0
 		const sec = time % 60 || 0

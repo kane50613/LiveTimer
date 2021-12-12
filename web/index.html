@@ -47,7 +47,14 @@
         if(timer.counted <= 10)
 			color = "red"
 
-        return `<span class="time ${color}">${parseTime(timer.counted)}</span><span class="title ${color}">${timer.title}</span>`
+        return `
+            <span class="time ${color}">
+                ${parseTime(timer.counted)}
+            </span>
+            <span class="title ${color}">
+                ${timer.title} ${timer.paused ? "(已暫停)" : ""}
+            </span>
+        `
     }
 
 	function parseTime(time) {

@@ -26,10 +26,8 @@ class Timer {
 		this.title = title
 		this.type = type ?? 0
 		
-		if (this.type === 3) {
-			this.counted = this.seconds
-			this.start()
-		}
+		this.reset()
+		this.start()
 	}
 	
 	start() {
@@ -47,7 +45,7 @@ class Timer {
 				io.emit('timer', this.toJSON())
 			}
 			if (this.type === 2) {
-				this.counted = this._started - Date.now()
+				this.counted = this._started - this.seconds
 				io.emit('timer', this.toJSON())
 			}
 			if (this.type === 3) {
@@ -58,11 +56,14 @@ class Timer {
 	}
 	
 	reset() {
-		if (this.type === 3)
-			return
-		clearInterval(this.interval)
-		this.interval = null
-		this.counted = this._started ?? 0
+		if (this.type !== 3) {
+			this.stop()
+			this.interval = null
+			this.counted = this._started ?? 0
+		}
+		
+		if(this.paused)
+			this.start()
 	}
 	
 	stop() {
@@ -75,6 +76,7 @@ class Timer {
 			position: this.position,
 			title: this.title,
 			counted: this.counted,
+			_started: this._started,
 			paused: this.paused
 		}
 	}
@@ -89,13 +91,14 @@ class Timer {
 	}
 }
 
+const config = require('./config')
+
 const timers = [
 	new Timer(0, "現在時間", 0, 3),
 	new Timer(1, "影片倒數", 0, 0),
-	new Timer(2, "距離直播開始", 0, 2),
-	new Timer(2, "距離直播結束", 0, 2),
+	new Timer(2, "距離直播開始", parseTimeString(config.default.beginTime), 2),
+	new Timer(3, "距離直播結束", parseTimeString(config.default.endTime), 2),
 ]
-const config = require('./config')
 const password = process.env.PASSWORD || config.password ||
 	new Array(5).fill(0).map(() => Math.floor(Math.random() * 10)).join('')
 
@@ -106,10 +109,10 @@ async function getVideos() {
 		fs.mkdirSync("web/videos")
 	
 	const videos = fs.readdirSync("web/videos")
-		.filter(x => /\.(mp4)$/.test(x))
-		.map(x => ({
-			link: x,
-		}))
+	.filter(x => /\.(mp4)$/.test(x))
+	.map(x => ({
+		link: x,
+	}))
 	
 	for (const vid of videos) {
 		vid.duration = Math.floor(
@@ -124,18 +127,25 @@ app.use(express.static('web'))
 io.on("connection", async (socket) => {
 	socket.emit('init', timers)
 	socket.emit("init_videos", await getVideos())
-	if(video)
+	if (video)
 		socket.emit("video", video)
 	
 	function verify() {
 		return socket.handshake.auth.password === password
 	}
 	
+	socket.on("set_timer", (index, counted) => {
+		if (!verify())
+			return
+		timers[index]._started = counted
+		io.emit('init', timers.map(x => x?.toJSON()))
+	})
+	
 	socket.on("set_video", async (link) => {
-		if(!verify())
+		if (!verify())
 			return
 		const _video = (await getVideos()).find(x => x.link === link)
-		if(!_video)
+		if (!_video)
 			return
 		video = _video
 		const timer = timers.find(x => x?.type === 0)
@@ -146,7 +156,7 @@ io.on("connection", async (socket) => {
 	})
 	
 	socket.on("play_video", () => {
-		if(!verify() || !video)
+		if (!verify() || !video)
 			return
 		const timer = timers.find(x => x?.type === 0)
 		timer.start()
@@ -155,7 +165,7 @@ io.on("connection", async (socket) => {
 	})
 	
 	socket.on("pause_video", () => {
-		if(!verify() || !video)
+		if (!verify() || !video)
 			return
 		const timer = timers.find(x => x?.type === 0)
 		timer.stop()
@@ -164,7 +174,7 @@ io.on("connection", async (socket) => {
 	})
 	
 	socket.on("stop_video", () => {
-		if(!verify() || !video)
+		if (!verify() || !video)
 			return
 		const timer = timers.find(x => x?.type === 0)
 		timer.reset()
@@ -173,7 +183,7 @@ io.on("connection", async (socket) => {
 	})
 	
 	socket.on("black_screen", () => {
-		if(!verify())
+		if (!verify())
 			return
 		video = null
 		const timer = timers.find(x => x?.type === 0)
@@ -185,5 +195,15 @@ io.on("connection", async (socket) => {
 	})
 })
 
-const port = Number(process.env.PORT) || 8080
+function parseTimeString(str) {
+	const s = str.split(":")
+	let t = 0
+	if (s.length === 3)
+		t += parseInt(s[0]) * 3600 + parseInt(s[1]) * 60 + parseInt(s[2])
+	else
+		t += parseInt(s[0]) * 60 + parseInt(s[1])
+	return t
+}
+
+const port = config.port || Number(process.env.PORT) || 3000
 server.listen(port, () => console.log(`Listening on port ${port}, password is: ${password}`))
