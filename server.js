@@ -92,8 +92,8 @@ class Timer {
 const timers = [
 	new Timer(0, "現在時間", 0, 3),
 	new Timer(1, "影片倒數", 0, 0),
-	null,
-	null
+	new Timer(2, "距離直播開始", 0, 2),
+	new Timer(2, "距離直播結束", 0, 2),
 ]
 const config = require('./config')
 const password = process.env.PASSWORD || config.password ||
@@ -105,12 +105,15 @@ async function getVideos() {
 	if (!fs.existsSync("web/videos"))
 		fs.mkdirSync("web/videos")
 	
-	const videos = fs.readdirSync("web/videos").filter(x => /\.(mp4)$/.test(x)).map(x => ({
-		link: x,
-	}))
+	const videos = fs.readdirSync("web/videos")
+		.filter(x => /\.(mp4)$/.test(x))
+		.map(x => ({
+			link: x,
+		}))
 	
 	for (const vid of videos) {
-		vid.duration = Math.floor(await getVideoDurationInSeconds(`web/videos/${vid.link}`))
+		vid.duration = Math.floor(
+			await getVideoDurationInSeconds(`web/videos/${vid.link}`))
 	}
 	
 	return videos
@@ -128,48 +131,6 @@ io.on("connection", async (socket) => {
 		return socket.handshake.auth.password === password
 	}
 	
-	socket.on("set", ({index, title, down, type}) => {
-		if(!verify())
-			return
-		if (timers[index])
-			timers[index].stop()
-		timers[index] = new Timer(index, title, down, type)
-		io.emit('init', timers.map(x => x?.toJSON()))
-	})
-	
-	socket.on("start", (position) => {
-		if(!verify())
-			return
-		if (!timers[position].paused)
-			return
-		timers[position].start()
-		socket.emit('init', timers.map(x => x?.toJSON()))
-	})
-	
-	socket.on("stop", (position) => {
-		if(!verify())
-			return
-		if (timers[position].paused)
-			return
-		timers[position].stop()
-		io.emit('init', timers.map(x => x?.toJSON()))
-	})
-	
-	socket.on("reset", (position) => {
-		if(!verify())
-			return
-		timers[position].reset()
-		io.emit('init', timers.map(x => x?.toJSON()))
-	})
-	
-	socket.on("clear", (position) => {
-		if(!verify())
-			return
-		timers[position]?.stop()
-		delete timers[position]
-		io.emit('init', timers.map(x => x?.toJSON()))
-	})
-	
 	socket.on("set_video", async (link) => {
 		if(!verify())
 			return
@@ -180,6 +141,45 @@ io.on("connection", async (socket) => {
 		const timer = timers.find(x => x?.type === 0)
 		timer._started = _video.duration
 		timer.counted = timer._started
+		io.emit('init', timers.map(x => x?.toJSON()))
+		io.emit('video', video)
+	})
+	
+	socket.on("play_video", () => {
+		if(!verify() || !video)
+			return
+		const timer = timers.find(x => x?.type === 0)
+		timer.start()
+		io.emit('init', timers.map(x => x?.toJSON()))
+		io.emit("play_video")
+	})
+	
+	socket.on("pause_video", () => {
+		if(!verify() || !video)
+			return
+		const timer = timers.find(x => x?.type === 0)
+		timer.stop()
+		io.emit('init', timers.map(x => x?.toJSON()))
+		io.emit("pause_video")
+	})
+	
+	socket.on("stop_video", () => {
+		if(!verify() || !video)
+			return
+		const timer = timers.find(x => x?.type === 0)
+		timer.reset()
+		io.emit('init', timers.map(x => x?.toJSON()))
+		io.emit("stop_video")
+	})
+	
+	socket.on("black_screen", () => {
+		if(!verify())
+			return
+		video = null
+		const timer = timers.find(x => x?.type === 0)
+		timer.reset()
+		timer._started = 0
+		timer.counted = 0
 		io.emit('init', timers.map(x => x?.toJSON()))
 		io.emit('video', video)
 	})

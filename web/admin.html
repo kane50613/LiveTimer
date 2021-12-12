@@ -9,17 +9,37 @@
 </head>
 <body>
 <section class="container">
-    <div class="container--v">
-        <div class="container--h">
-            <div class="timer a"></div>
-            <div class="timer b"></div>
-        </div>
-        <div class="container--h">
-            <div class="timer c"></div>
-            <div class="timer d"></div>
-        </div>
+    <div class="container--one">
+        <div class="timer"></div>
+        <div class="timer"></div>
+        <div class="timer"></div>
+        <div class="timer"></div>
     </div>
     <div class="container--video">
+        <h1>直播開始時間</h1>
+        <label>
+            <input type="number" value="0" class="__input"/>
+            <span>:</span>
+            <input type="number" value="0"/>
+            <span>:</span>
+            <input type="number" value="0"/>
+        </label>
+        <h1>直播結束時間</h1>
+        <label>
+            <input type="number" value="0"/>
+            <span>:</span>
+            <input type="number" value="0"/>
+            <span>:</span>
+            <input type="number" value="0"/>
+        </label>
+        <h1>影片控制</h1>
+        <span id="videoText"></span>
+        <div class="btn--container">
+            <button onclick="action('play_video')">播放</button>
+            <button onclick="action('pause_video')">暫停</button>
+            <button onclick="action('stop_video')">停止</button>
+            <button onclick="action('black_screen')">黑畫面</button>
+        </div>
         <h1>播放清單</h1>
         <div class="playlist"></div>
     </div>
@@ -82,24 +102,24 @@
 		}
 	})
 
+    socket.on("video", (_video) => {
+		const videoText = document.querySelector("#videoText")
+
+        videoText.innerHTML = _video?.link ?? ""
+    })
+
 	socket.on("timer", (timer) => {
 		timersContainer[timer.position].innerHTML = buildTimer(timer)
 	})
 
-	function setTimer(index, type) {
-		if (type === 3)
-			return socket.emit("set", {index, title: "現在時間", down: 0, type})
-		const title = prompt("請輸入標題")
-		if (!title || title.length === 0)
-			return
-		const down = parseInt(prompt("倒數秒數"))
-		if (!down || isNaN(down) || down < 0)
-			return alert("秒數不是數字或是是負數")
-		socket.emit("set", {index, title, down, type})
-	}
+    function updateTimer(e) {
+        console.log(e)
+
+        return false
+    }
 
 	function action(type, position) {
-		socket.emit(type, position)
+		socket.emit(type, position ?? 0)
 	}
 
 	function buildTimer(timer) {

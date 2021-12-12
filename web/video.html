@@ -11,17 +11,35 @@
 </head>
 <body>
 <video>
-    <source type="video/mp4">
+    <source src="" type="video/mp4"/>
 </video>
 <script>
 	const socket = io()
+	const video = document.querySelector("video")
+    const src = document.querySelector("source")
 
     socket.on("video", (_video) => {
-		const video = document.querySelector("video")
-        const src = document.querySelector("source")
-
-        src.src = `/videos/${_video?.link}`
+        if(!_video) {
+            video.pause()
+            video.load()
+            src.src = ""
+            return
+        }
+        src.src = _video.link ? `/videos/${_video.link}` : null
         video.load()
+    })
+
+    socket.on("play_video", () => {
+        video.play()
+    })
+
+    socket.on("pause_video", () => {
+		video.pause()
+    })
+
+    socket.on("stop_video", () => {
+		video.pause()
+        video.currentTime = 0
     })
 </script>
 </body>
