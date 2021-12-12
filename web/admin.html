@@ -6,6 +6,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet"/>
 </head>
 <body>
 <section class="container">
@@ -43,6 +44,12 @@
         <h1>播放清單</h1>
         <div class="playlist"></div>
     </div>
+    <div class="credit--container">
+        <a href="https://github.com/Gary50613/LiveTimer" target="_blank">
+            Made by <strong>@Gary50613 (Kane)</strong>
+        </a>
+        <span>&copy; 2021 LiveTimer</span>
+    </div>
 </section>
 
 <script src="./socket.io.min.js"></script>
@@ -62,7 +69,6 @@
 		const clearPassword = confirm("要不要清除密碼?")
 		if (clearPassword)
 			localStorage.removeItem("password")
-		// window.location.href = "/"
 	})
 
 	const timersContainer = document.querySelectorAll(".timer")
@@ -141,21 +147,6 @@
                 ${timer.title} ${timer.paused ? "(已暫停)" : ""}
             </span>
         `
-		//  <div class="btn--container">
-		// 		<button onclick="action('stop', ${timer.position})">
-		// 		暫停
-		// 		</button>
-		// 	<button onclick="action('start', ${timer.position})">
-		// 		繼續
-		// 	</button>
-		// 	<button onclick="action('reset', ${timer.position})">
-		// 		重設計時器
-		// 	</button>
-		// 	<button onclick="action('clear', ${timer.position})">
-		// 		移除
-		// 	</button>
-		// </div>
-
 	}
 
 	function parseTime(time, nullable = false) {
