@@ -35,8 +35,11 @@ class Timer {
 			this.stop()
 		this.interval = setInterval(() => {
 			if (this.type === 0) {
-				if (this.counted <= 0)
+				if (this.counted <= 0) {
+					video = null
+					io.emit('video', video)
 					return this.stop()
+				}
 				this.counted--
 				io.emit('timer', this.toJSON())
 			}
@@ -62,7 +65,7 @@ class Timer {
 			this.counted = this._started ?? 0
 		}
 		
-		if(this.paused)
+		if(this.paused && this.type !== 0)
 			this.start()
 	}
 	
@@ -131,7 +134,10 @@ io.on("connection", async (socket) => {
 		socket.emit("video", video)
 	
 	function verify() {
-		return socket.handshake.auth.password === password
+		const verified = socket.handshake.auth.password === password
+		if(socket.handshake.auth?.password !== null && !verified)
+			socket.disconnect(true)
+		return verified
 	}
 	
 	socket.on("set_timer", (index, counted) => {

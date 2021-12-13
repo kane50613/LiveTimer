@@ -54,110 +54,115 @@
 
 <script src="./socket.io.min.js"></script>
 <script>
-	let timers = new Array(4), videos = []
+    let timers = new Array(4), videos = []
 
-	const password = localStorage.getItem("password") || prompt("請輸入密碼")
-	localStorage.setItem("password", password)
+    const password = localStorage.getItem("password") || prompt("請輸入密碼")
+    if(!password) {
+        localStorage.removeItem('password')
+        alert("密碼不能為空")
+        location.href = '/'
+    }
+	else
+        localStorage.setItem("password", password)
 
-	const socket = io({
-		auth: {password},
-		reconnection: false,
-	})
+    const socket = io({
+        auth: { password },
+        reconnection: false,
+    })
 
-	socket.on('disconnect', () => {
-		alert("連線已中斷")
-		const clearPassword = confirm("要不要清除密碼?")
-		if (clearPassword)
-			localStorage.removeItem("password")
-	})
+    socket.on('disconnect', () => {
+        alert("連線已中斷")
+        const clearPassword = confirm("要不要清除密碼?")
+        if (clearPassword)
+            localStorage.removeItem("password")
+    })
 
-	const timersContainer = document.querySelectorAll(".timer")
-	const playlistContainer = document.querySelector("div.playlist")
+    const timersContainer = document.querySelectorAll(".timer")
+    const playlistContainer = document.querySelector("div.playlist")
 
-	socket.on("init", (_timers) => {
-		timers = _timers
-		for (let i = 0; i < timers.length; i++) {
-			const timer = timers[i]
-			if (!timer) {
-				timersContainer[i].innerHTML = ''
-				continue
-			}
-			timersContainer[i].innerHTML = buildTimer(timer)
-		}
+    socket.on("init", (_timers) => {
+        timers = _timers
+        for (let i = 0; i < timers.length; i++) {
+            const timer = timers[i]
+            if (!timer) {
+                timersContainer[i].innerHTML = ''
+                continue
+            }
+            timersContainer[i].innerHTML = buildTimer(timer)
+        }
 
-        for(let i = 0; i < 2; i++) {
-			let _t = timers[i + 2]._started
+        for (let i = 0; i < 2; i++) {
+            let _t = timers[i + 2]._started
             const h = Math.floor(_t / 3600)
             _t -= h * 3600
-			const m = Math.floor(_t / 60)
+            const m = Math.floor(_t / 60)
             _t -= m * 60
             document.querySelectorAll(`.__input.h`)[i].value = h
-			document.querySelectorAll(`.__input.m`)[i].value = m
-			document.querySelectorAll(`.__input.s`)[i].value = _t
+            document.querySelectorAll(`.__input.m`)[i].value = m
+            document.querySelectorAll(`.__input.s`)[i].value = _t
         }
-	})
+    })
 
-	socket.on("init_videos", (_videos) => {
-		videos = _videos
-		playlistContainer.innerHTML = ""
+    socket.on("init_videos", (_videos) => {
+        videos = _videos
+        playlistContainer.innerHTML = ""
 
-		for (const vid of videos) {
-			playlistContainer.innerHTML +=
-				`<div class="item--container" onclick="action('set_video', '${vid?.link}')">
-                    <span class="link">${vid?.link}</span>
-                    <span class="duration">${parseTime(vid?.duration, true)}</span>
+        for (const vid of videos) {
+            playlistContainer.innerHTML +=
+                `<div class="item--container" onclick="action('set_video', '${ vid?.link }')">
+                    <span class="link">${ vid?.link }</span>
+                    <span class="duration">${ parseTime(vid?.duration, true) }</span>
                 </div>`
-		}
-	})
+        }
+    })
 
     socket.on("video", (_video) => {
-		const videoText = document.querySelector("#videoText")
+        const videoText = document.querySelector("#videoText")
 
         videoText.innerHTML = _video?.link ?? ""
     })
 
-	socket.on("timer", (timer) => {
-		timersContainer[timer.position].innerHTML = buildTimer(timer)
-	})
+    socket.on("timer", (timer) => {
+        timersContainer[timer.position].innerHTML = buildTimer(timer)
+    })
 
     function updateTimer(index) {
-		socket.emit("set_timer", index + 2,
+        socket.emit("set_timer", index + 2,
             parseInt(document.querySelectorAll(`.__input.h`)[index].value) * 3600 +
             parseInt(document.querySelectorAll(`.__input.m`)[index].value) * 60 +
             parseInt(document.querySelectorAll(`.__input.s`)[index].value)
         )
     }
 
-	function action(type, position) {
-		socket.emit(type, position ?? 0)
-	}
+    function action(type, position) {
+        socket.emit(type, position ?? 0)
+    }
 
-	function buildTimer(timer) {
-		let color = 'white'
-		if (timer.counted <= 30)
-			color = 'yellow'
-		if (timer.counted <= 10)
-			color = "red"
+    function buildTimer(timer) {
+        let color = 'white'
+        if (timer.counted <= 30 && timer.counted > 0)
+            color = 'yellow'
+        if (timer.counted <= 10 && timer.counted > 0)
+            color = "red"
 
-		return `
-            <span class="time ${color}">
-                ${parseTime(timer.counted)}
+        return `
+            <span class="time ${ color }">
+                ${ parseTime(timer.counted) }
             </span>
-            <span class="title ${color}">
-                ${timer.title} ${timer.paused ? "(已暫停)" : ""}
+            <span class="title ${ color }">
+                ${ timer.title } ${ timer.paused ? "(已暫停)" : "" }
             </span>
         `
-	}
+    }
 
-	function parseTime(time, nullable = false) {
-		const isNegative = time < 0
-		time = Math.floor(Math.abs(time))
-		const hr = Math.floor(time / 3600) || 0
-		const min = Math.floor((time % 3600) / 60) || 0
-		const sec = time % 60 || 0
+    function parseTime(time, nullable = false) {
+        time = Math.floor(Math.abs(time))
+        const hr = Math.floor(time / 3600) || 0
+        const min = Math.floor((time % 3600) / 60) || 0
+        const sec = time % 60 || 0
 
-		return `${isNegative ? "-" : ""}${hr === 0 && nullable ? "" : ((hr < 10 ? '0' + hr : hr) + ":")}${min < 10 ? '0' + min : min}:${sec < 10 ? '0' + sec : sec}`
-	}
+        return `${ hr === 0 && nullable ? "" : ((hr < 10 ? '0' + hr : hr) + ":") }${ min < 10 ? '0' + min : min }:${ sec < 10 ? '0' + sec : sec }`
+    }
 </script>
 </body>
 </html>
