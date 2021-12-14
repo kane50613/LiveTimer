@@ -43,10 +43,6 @@
 		}
 	})
 
-	socket.on("timer", (timer) => {
-		timersContainer[timer.position].innerHTML = buildTimer(timer)
-	})
-
 	function buildTimer(timer) {
 		let color = 'white'
 		if (timer.counted <= 30 && timer.counted > 0)

@@ -97,6 +97,15 @@
     height: 100%;
 }
 
+.video_action--container {
+    display: flex;
+    align-items: center;
+}
+
+.video_action--container div {
+    margin-left: 8rem;
+}
+
 .container--video {
     padding: 0 2rem;
     border-left: 1px dashed white;

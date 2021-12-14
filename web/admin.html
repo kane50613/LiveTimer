@@ -41,7 +41,12 @@
             <button onclick="action('stop_video')">停止</button>
             <button onclick="action('black_screen')">黑畫面</button>
         </div>
-        <h1>播放清單</h1>
+        <div class="video_action--container">
+            <h1>播放清單</h1>
+            <div class="btn--container">
+                <button onclick="action('refresh_video')">刷新影片</button>
+            </div>
+        </div>
         <div class="playlist"></div>
     </div>
     <div class="credit--container">
@@ -120,10 +125,6 @@
         const videoText = document.querySelector("#videoText")
 
         videoText.innerHTML = _video?.link ?? ""
-    })
-
-    socket.on("timer", (timer) => {
-        timersContainer[timer.position].innerHTML = buildTimer(timer)
     })
 
     function updateTimer(index) {

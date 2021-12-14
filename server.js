@@ -16,7 +16,7 @@ class Timer {
 	type = 0
 	_started = 0
 	counted = 0
-	interval
+	paused = true
 	position = 0
 	
 	constructor(position, title, down, type = 0) {
@@ -27,51 +27,44 @@ class Timer {
 		this.type = type ?? 0
 		
 		this.reset()
-		this.start()
+
+		if(this.type !== 0)
+			this.start()
 	}
 	
-	start() {
-		if (this.interval)
-			this.stop()
-		this.interval = setInterval(() => {
-			if (this.type === 0) {
-				if (this.counted <= 0) {
-					video = null
-					io.emit('video', video)
-					return this.stop()
-				}
-				this.counted--
-				io.emit('timer', this.toJSON())
+	update() {
+		if (this.type === 0) {
+			if (this.counted <= 0) {
+				video = null
+				io.emit('video', video)
+				return this.stop()
 			}
-			if (this.type === 1) {
-				this.counted++
-				io.emit('timer', this.toJSON())
-			}
-			if (this.type === 2) {
-				this.counted = this._started - this.seconds
-				io.emit('timer', this.toJSON())
-			}
-			if (this.type === 3) {
-				this.counted = this.seconds
-				io.emit('timer', this.toJSON())
-			}
-		}, 1000)
+			this.counted--
+		}
+		if (this.type === 1)
+			this.counted++
+		if (this.type === 2)
+			this.counted = this._started - this.seconds
+		if (this.type === 3)
+			this.counted = this.seconds
 	}
 	
 	reset() {
 		if (this.type !== 3) {
 			this.stop()
-			this.interval = null
 			this.counted = this._started ?? 0
 		}
 		
 		if(this.paused && this.type !== 0)
 			this.start()
 	}
+
+	start() {
+		this.paused = false
+	}
 	
 	stop() {
-		clearInterval(this.interval)
-		this.interval = null
+		this.paused = true
 	}
 	
 	toJSON() {
@@ -88,10 +81,6 @@ class Timer {
 		const date = new Date()
 		return date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds()
 	}
-	
-	get paused() {
-		return !this.interval
-	}
 }
 
 const config = require('./config')
@@ -102,6 +91,16 @@ const timers = [
 	new Timer(2, "距離直播開始 (Live Time)", parseTimeString(config.default.beginTime), 2),
 	new Timer(3, "距離直播結束 (End Time)", parseTimeString(config.default.endTime), 2),
 ]
+
+let videos = []
+
+setInterval(() => {
+	for(const timer of timers)
+		if(!timer.paused)
+			timer.update()
+	io.emit('init', timers)
+}, 1000)
+
 const password = process.env.PASSWORD || config.password ||
 	new Array(5).fill(0).map(() => Math.floor(Math.random() * 10)).join('')
 
@@ -118,19 +117,22 @@ async function getVideos(duration = false) {
 	}))
 
 	if(duration)
-		for (const vid of videos) {
+		for (const vid of videos)
 			vid.duration = Math.floor(
 				await getVideoDurationInSeconds(`web/videos/${vid.link}`))
-		}
 	
 	return videos
 }
 
 app.use(express.static('web'))
 
+getVideos(true)
+.then((_videos) => videos = _videos)
+
 io.on("connection", async (socket) => {
-	socket.emit('init', timers)
-	socket.emit("init_videos", await getVideos(true))
+	socket.emit('init', timers.map(x => x?.toJSON()))
+	socket.emit("init_videos", videos)
+
 	if (video)
 		socket.emit("video", video)
 	
@@ -151,11 +153,12 @@ io.on("connection", async (socket) => {
 	socket.on("set_video", async (link) => {
 		if (!verify())
 			return
-		const _video = (await getVideos()).find(x => x.link === link)
+		const _video = videos.find(x => x.link === link)
 		if (!_video)
 			return
 		video = _video
 		const timer = timers.find(x => x?.type === 0)
+		timer.reset()
 		timer._started = _video.duration
 		timer.counted = timer._started
 		io.emit('init', timers.map(x => x?.toJSON()))
@@ -199,6 +202,13 @@ io.on("connection", async (socket) => {
 		timer.counted = 0
 		io.emit('init', timers.map(x => x?.toJSON()))
 		io.emit('video', video)
+	})
+
+	socket.on("refresh_video", async () => {
+		if(!verify())
+			return
+		videos = await getVideos(true)
+		socket.emit("init_videos", videos)
 	})
 })
 
