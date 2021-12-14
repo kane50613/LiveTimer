@@ -107,7 +107,7 @@ const password = process.env.PASSWORD || config.password ||
 
 let video
 
-async function getVideos() {
+async function getVideos(duration = false) {
 	if (!fs.existsSync("web/videos"))
 		fs.mkdirSync("web/videos")
 	
@@ -116,11 +116,12 @@ async function getVideos() {
 	.map(x => ({
 		link: x,
 	}))
-	
-	for (const vid of videos) {
-		vid.duration = Math.floor(
-			await getVideoDurationInSeconds(`web/videos/${vid.link}`))
-	}
+
+	if(duration)
+		for (const vid of videos) {
+			vid.duration = Math.floor(
+				await getVideoDurationInSeconds(`web/videos/${vid.link}`))
+		}
 	
 	return videos
 }
@@ -129,7 +130,7 @@ app.use(express.static('web'))
 
 io.on("connection", async (socket) => {
 	socket.emit('init', timers)
-	socket.emit("init_videos", await getVideos())
+	socket.emit("init_videos", await getVideos(true))
 	if (video)
 		socket.emit("video", video)
 	
